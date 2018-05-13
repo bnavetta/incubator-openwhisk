@@ -63,7 +63,8 @@ case class DockerClientTimeoutConfig(run: Duration,
                                      ps: Duration,
                                      pause: Duration,
                                      unpause: Duration,
-                                     inspect: Duration)
+                                     inspect: Duration,
+                                     network: Duration)
 
 /**
  * Serves as interface to the docker CLI tool.
@@ -160,6 +161,17 @@ class DockerClient(dockerHost: Option[String] = None,
     val cmd = Seq("ps", "--quiet", "--no-trunc") ++ allArg ++ filterArgs
     runCmd(cmd, timeouts.ps).map(_.lines.toSeq.map(ContainerId.apply))
   }
+
+  override def createNetwork(name: String, subnet: String, options: Map[String, String])(implicit transid: TransactionId): Future[Unit] = {
+    val optArgs = if (options.isEmpty) Seq.empty else Seq("-o", options.map{ case (k, v) => s"$k=$v" }.mkString(","))
+    runCmd(Seq("network", "create", name, "--subnet", subnet) ++ optArgs, timeouts.network).map(_ => ())
+  }
+
+  override def removeNetwork(name: String)(implicit transid: TransactionId): Future[Unit] = runCmd(Seq("network", "rm", name), timeouts.network).map(_ => ())
+
+  override def connect(id: ContainerId, network: String)(implicit transid: TransactionId): Future[Unit] = runCmd(Seq("network", "connect", network, id.asString), timeouts.network).map(_ => ())
+
+  override def disconnect(id: ContainerId, network: String)(implicit transid: TransactionId): Future[Unit] = runCmd(Seq("network", "disconnect", network, id.asString), timeouts.network).map(_ => ())
 
   /**
    * Stores pulls that are currently being executed and collapses multiple
@@ -263,6 +275,42 @@ trait DockerApi {
    * @return a Future containing whether the container was killed or not
    */
   def isOomKilled(id: ContainerId)(implicit transid: TransactionId): Future[Boolean]
+
+  /**
+    * Creates a bridge network
+    *
+    * @param name the name of the network (within Docker, not necessarily the bridge interface name)
+    * @param subnet the subnet, in CIDR format, that this network covers
+    * @param options additional options to the bridge driver
+    * @return a Future completing once the network is created
+    */
+  def createNetwork(name: String, subnet: String, options: Map[String, String] = Map.empty)(implicit transid: TransactionId): Future[Unit]
+
+  /**
+    * Removes the Docker network with the given name
+    *
+    * @param name the network name
+    * @return a Future completing once the network has been destroyed
+    */
+  def removeNetwork(name: String)(implicit transid: TransactionId): Future[Unit]
+
+  /**
+    * Connect a container to a network
+    *
+    * @param id the id of the container to connect
+    * @param network the network to attach the container to
+    * @return a Future completing once the container is connected
+    */
+  def connect(id: ContainerId, network: String)(implicit transid: TransactionId): Future[Unit]
+
+  /**
+    * Disconnect a container from a network
+    *
+    * @param id the id of the container to disconnect
+    * @param network the network to remove the container from
+    * @return a Future completing once the container is disconnected
+    */
+  def disconnect(id: ContainerId, network: String)(implicit transid: TransactionId): Future[Unit]
 }
 
 /** Indicates any error while starting a container that leaves a broken container behind that needs to be removed */

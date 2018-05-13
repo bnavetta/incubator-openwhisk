@@ -266,6 +266,10 @@ class DockerContainer(protected val id: ContainerId,
 
   /** Delimiter used to split log-lines as written by the json-log-driver. */
   private val delimiter = ByteString("\n")
+
+  def connect(network: String)(implicit transid: TransactionId): Future[Unit] = docker.connect(id, network)
+
+  def disconnect(network: String)(implicit transid: TransactionId): Future[Unit] = docker.disconnect(id, network)
 }
 
 /**
