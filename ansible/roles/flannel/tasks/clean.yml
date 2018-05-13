@@ -1,0 +1,9 @@
+---
+# Remove flannel containers
+
+- name: remove etcd
+  docker_container:
+    name: flannel{{ groups['invokers'].index(inventory_hostname) }}
+    keep_volumes: False
+    state: absent
+  ignore_errors: True

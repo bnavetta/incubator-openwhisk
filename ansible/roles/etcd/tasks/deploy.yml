@@ -1,0 +1,38 @@
+---
+# This role will install etcd in group 'etcd' in the environment inventory
+
+- name: add etcd vars
+  vars:
+    etcd_client_port: "{{ etcd.advertisedPort + groups['etcds'].index(inventory_hostname) }}"
+    etcd_peer_port: "{{ etcd.peerPort + groups['etcds'].index(inventory_hostname) }}"
+    etcd_name: "etcd{{ groups['etcds'].index(inventory_hostname) }}"
+  set_fact:
+    etcd_env_vars:
+      "ETCD_NAME": "{{ etcd_name }}"
+      "ETCD_ADVERTISE_CLIENT_URLS": "http://{{ ansible_host }}:{{ etcd_client_port }}"
+      "ETCD_LISTEN_CLIENT_URLS": "http://0.0.0.0:{{ etcd_client_port }}"
+      "ETCD_LISTEN_PEER_URLS": "http://0.0.0.0:{{ etcd_peer_port }}"
+      "ETCD_INITIAL_ADVERTISE_PEER_URLS": "http://{{ ansible_host }}:{{ etcd_peer_port }}"
+      # TODO: support multiple etcd nodes
+      "ETCD_INITIAL_CLUSTER": "{{ etcd_name }}=http://{{ ansible_host }}:{{ etcd_peer_port }}"
+      "ETCD_DATA_DIR": "/etcd-data"
+
+- name: "(re)start etcd using '{{ etcd_image }}'"
+  vars:
+    etcd_image: "{{ etcd.docker_image | default('quay.io/coreos/etcd:' ~ etcd.version) }}"
+  docker_container:
+    name: etcd{{ groups['etcds'].index(inventory_hostname) }}
+    image: "{{ etcd_image }}"
+    state: started
+    recreate: true
+    restart_policy: "{{ docker.restart.policy }}"
+    env: "{{ etcd_env_vars }}"
+    ports:
+      - "{{ etcd.advertisedPort + groups['etcds'].index(inventory_hostname) }}:{{ etcd.advertisedPort + groups['etcds'].index(inventory_hostname) }}"
+      - "{{ etcd.peerPort + groups['etcds'].index(inventory_hostname) }}:{{ etcd.peerPort + groups['etcds'].index(inventory_hostname) }}"
+    volumes:
+      - "{{ etcd.dataDir }}:/etcd-data:rw"
+  retries: "{{ docker.pull.retries }}"
+  delay: "{{ docker.pull.delay }}"
+
+# TODO: wait for etcd to start

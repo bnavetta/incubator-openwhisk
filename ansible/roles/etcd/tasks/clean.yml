@@ -1,0 +1,9 @@
+---
+# Remove etcd containers
+
+- name: remove etcd
+  docker_container:
+    name: etcd{{ groups['etcds'].index(inventory_hostname) }}
+    keep_volumes: False
+    state: absent
+  ignore_errors: True

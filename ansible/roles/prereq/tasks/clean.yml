@@ -33,3 +33,9 @@
     name: httplib2
     state: absent
   become: true
+
+- name: remove etcd3
+  pip:
+    name: etcd3
+    state: absent
+  become: true

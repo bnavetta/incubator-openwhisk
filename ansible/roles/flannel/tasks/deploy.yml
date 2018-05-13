@@ -1,0 +1,35 @@
+---
+# This role will install flannel on all invokers
+
+- name: add flannel vars
+  set_fact:
+    flannel_env_vars:
+      FLANNELD_PUBLIC_IP: "{{ ansible_host }}"
+      FLANNELD_ETCD_PREFIX: "{{ flannel.etcd.prefix }}"
+      FLANNELD_ETCD_ENDPOINTS: "http://{{ hostvars[groups['etcds'][0]]['ansible_host'] }}:{{ etcd.advertisedPort }}"
+
+- name: "(re)start flannel using '{{ flannel_image }}'"
+  vars:
+    flannel_image: "{{ flannel.docker_image | default('quay.io/coreos/flannel:' ~ flannel.version) }}"
+  docker_container:
+    name: flannel{{ groups['invokers'].index(inventory_hostname) }}
+    image: "{{ flannel_image }}"
+    state: started
+    recreate: true
+    restart_policy: "{{ docker.restart.policy }}"
+    env: "{{ flannel_env_vars }}"
+    network_mode: host
+    privileged: true
+    volumes:
+      - "{{ flannel.subnetDir }}:/run/flannel:rw"
+  retries: "{{ docker.pull.retries }}"
+  delay: "{{ docker.pull.delay }}"
+
+# TODO: we need to use the v2 api for data to be accessible to flannel
+- name: store flannel configuration in etcd
+  etcd3:
+    key: "{{ flannel.etcd.prefix }}/config"
+    value: "{{ flannel.config | to_json }}"
+    state: present
+    host: "{{ hostvars[groups['etcds'][0]]['ansible_host'] }}"
+    port: "{{ etcd.advertisedPort }}"

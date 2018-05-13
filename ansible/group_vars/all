@@ -147,6 +147,22 @@ zookeeper_connect_string: "{% set ret = [] %}\
 invokerHostnameFromMap: "{{ groups['invokers'] | map('extract', hostvars, 'ansible_host') | list | first }}"
 invokerHostname: "{{ invokerHostnameFromMap | default(inventory_hostname) }}"
 
+etcd:
+  version: v3.3.5
+  advertisedPort: 2379
+  peerPort: 2380
+  dataDir: /tmp/etcd
+
+flannel:
+  version: v0.10.0
+  etcd:
+    prefix: /openwhisk/flannel
+  subnetDir: /tmp/wskflannel
+  config:
+    Network: 10.0.0.0/8
+    Backend:
+      Type: vxlan
+
 invoker:
   dir:
     become: "{{ invoker_dir_become | default(false) }}"

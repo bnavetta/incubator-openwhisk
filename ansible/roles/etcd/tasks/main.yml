@@ -1,0 +1,9 @@
+# This role will install etcd in group 'etcd' in the environment inventory
+# In deploy mode it will deploy etcd.
+# In clean mode it will remove etcd containers.
+
+- import_tasks: deploy.yml
+  when: mode == "deploy"
+
+- import_tasks: clean.yml
+  when: mode == "clean"
