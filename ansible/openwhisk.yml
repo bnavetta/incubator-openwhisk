@@ -29,3 +29,5 @@
 - import_playbook: routemgmt.yml
 
 - import_playbook: flannel.yml
+
+- import_playbook: registry.yml

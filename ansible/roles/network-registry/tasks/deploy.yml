@@ -1,0 +1,18 @@
+---
+# This role will install the network task registry
+
+- name: "(re)start the registry'"
+  docker_container:
+    name: registry
+    image: "{{ docker_registry~docker.image.prefix}}/registry:{{docker.image.tag }}"
+    env:
+      REGISTRY_PORT: '7777'
+    ports:
+      - "7777:7777"
+    state: started
+    recreate: true
+    restart_policy: "{{ docker.restart.policy }}"
+    networks:
+      - name: whisknet
+  retries: "{{ docker.pull.retries }}"
+  delay: "{{ docker.pull.delay }}"

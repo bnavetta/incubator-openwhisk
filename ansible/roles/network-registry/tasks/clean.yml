@@ -1,0 +1,8 @@
+---
+
+- name: remove the registry
+  docker_container:
+    name: registry
+    state: absent
+    keep_volumes: False
+  ignore_errors: True
