@@ -84,8 +84,8 @@ class DockerContainerFactory(instance: InstanceId,
         name = Some(name),
         useRunc = dockerContainerFactoryConfig.useRunc,
         parameters ++ containerArgsConfig.extraArgs.map { case (k, v) => ("--" + k, v) })
-//      overlay <- overlayNetwork
-//      _ <- container.connect(overlay.name)(tid)
+      overlay <- overlayNetwork
+      _ <- container.connect(overlay.name)(tid)
     } yield container
   }
 
@@ -97,6 +97,8 @@ class DockerContainerFactory(instance: InstanceId,
     implicit val transid = TransactionId.invoker
     try {
       removeAllActionContainers()
+
+      overlayNetwork.onSuccess { case net => net.destroy() }
     } catch {
       case e: Exception => logging.error(this, s"Failed to remove action containers: ${e.getMessage}")
     }

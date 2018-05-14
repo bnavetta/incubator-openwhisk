@@ -163,7 +163,9 @@ class DockerClient(dockerHost: Option[String] = None,
   }
 
   override def createNetwork(name: String, subnet: String, options: Map[String, String])(implicit transid: TransactionId): Future[Unit] = {
-    val optArgs = if (options.isEmpty) Seq.empty else Seq("-o", options.map{ case (k, v) => s"$k=$v" }.mkString(","))
+    val optArgs = options.flatMap {
+      case (key, value) => Seq("--opt", s"$key=$value")
+    }
     runCmd(Seq("network", "create", name, "--subnet", subnet) ++ optArgs, timeouts.network).map(_ => ())
   }
 

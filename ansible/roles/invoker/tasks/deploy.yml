@@ -234,7 +234,8 @@
       {{ whisk_logs_dir }}/invoker{{ groups['invokers'].index(inventory_hostname) }}:/logs,\
       {{ invoker.confdir }}/invoker{{ groups['invokers'].index(inventory_hostname) }}:/conf,\
       {{ dockerInfo['DockerRootDir'] }}/containers/:/containers,\
-      {{ docker_sock | default('/var/run/docker.sock') }}:/var/run/docker.sock"
+      {{ docker_sock | default('/var/run/docker.sock') }}:/var/run/docker.sock,\
+      {{ flannel.subnetDir }}:/run/flannel"
 
 - name: define options when deploying invoker on Ubuntu
   set_fact:
