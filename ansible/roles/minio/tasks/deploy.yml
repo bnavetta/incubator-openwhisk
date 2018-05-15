@@ -1,0 +1,18 @@
+---
+
+- name: "(re)start minio using '{{ minio_image }}'"
+  vars:
+    minio_image: "{{ minio.docker_image | default('minio/minio:' ~ minio.version) }}"
+  docker_container:
+    name: "minio{{ groups['minios'].index(inventory_hostname) }}"
+    image: "{{ minio_image }}"
+    state: started
+    recreate: true
+    restart_policy: "{{ docker.restart.policy }}"
+    command: [ 'server', '/data' ]
+    ports:
+      - "{{ minio.port }}:9000"
+    volumes:
+      - "{{ minio.dataDir }}:/data"
+  retries: "{{ docker.pull.retries }}"
+  delay: "{{ docker.pull.delay }}"

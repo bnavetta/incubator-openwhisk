@@ -163,6 +163,11 @@ flannel:
     Backend:
       Type: vxlan
 
+minio:
+  version: latest
+  port: 3343
+  dataDir: /tmp/wskdata
+
 invoker:
   dir:
     become: "{{ invoker_dir_become | default(false) }}"

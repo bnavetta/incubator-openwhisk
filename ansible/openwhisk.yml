@@ -30,4 +30,6 @@
 
 - import_playbook: flannel.yml
 
+- import_playbook: minio.yml
+
 - import_playbook: registry.yml

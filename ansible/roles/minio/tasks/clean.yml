@@ -1,0 +1,8 @@
+---
+
+- name: remove minio
+  docker_container:
+    name: minio{{ groups['minios'].index(inventory_hostname) }}
+    keep_volumes: False
+    state: absent
+  ignore_errors: True
