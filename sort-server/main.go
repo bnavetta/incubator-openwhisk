@@ -62,14 +62,15 @@ func UploadDatasetHandler(w http.ResponseWriter, r *http.Request) {
 	lines := 0
 	src := bufio.NewScanner(r.Body)
 	for src.Scan() {
-		line := src.Bytes()
-		_, err = uploads[lines%int(partitions)].writer.Write(line)
-		_, err = uploads[lines%int(partitions)].writer.Write([]byte("\n"))
+		line := src.Text()
+		partition := lines % int(partitions)
+		log.Printf("Sending line '%v' to partition %v", line, partition)
+		_, err = fmt.Fprintf(uploads[partition].writer, "%v\n", line)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error writing partition: %v", err), 500)
 			return
 		}
-		lines++
+		lines = lines + 1
 	}
 
 	if err = src.Err(); err != nil {
@@ -118,7 +119,7 @@ func UploadSplitHandler(w http.ResponseWriter, r *http.Request) {
 	path := fmt.Sprintf("%v/output-splits/%v", dataset, split)
 	log.Printf("Writing split %v of dataset %v to %v", split, dataset, path)
 
-	defer r.Body.Close()
+	// defer r.Body.Close() // is this a problem?
 	_, err := minioClient.PutObject(bucketName, path, r.Body, -1, minio.PutObjectOptions{
 		ContentType: "text/plain",
 	})
@@ -216,12 +217,12 @@ func main() {
 	r.HandleFunc("/{dataset}/outputs/{split}", UploadSplitHandler).Methods("PUT")
 	r.HandleFunc("/{dataset}/output", ComposeOutputHandler).Methods("GET")
 
-	registry := NewRegistry(registryAddr)
-	err = registry.Register("sort-file-store")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not register: %v", err)
-		os.Exit(1)
-	}
+	// registry := NewRegistry(registryAddr)
+	// err = registry.Register("sort-file-store")
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Could not register: %v", err)
+	// 	os.Exit(1)
+	// }
 
 	http.Handle("/", r)
 	http.ListenAndServe(fmt.Sprintf(":%v", port), nil)

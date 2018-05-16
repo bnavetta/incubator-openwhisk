@@ -24,6 +24,6 @@
   roles:
   - flannel
 
-- hosts: invoker0
+- hosts: task_registry
   roles:
   - network-registry

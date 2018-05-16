@@ -4,14 +4,14 @@ db_port: 5984
 db_protocol: http
 db_username: couch_user
 db_password: couch_password
-db_host: "{{ groups['db'] | first }}"
+db_host: "{{ hostvars[groups['db'] | first]['ansible_host'] }}"
 db_prefix: whisk_distributed_
 
 whisk_version_name: distributed
 config_root_dir: /tmp/wskconf
 whisk_logs_dir: /tmp/wsklogs
 registry_storage_dir: "/"
-docker_registry: "{{ groups['registry'] | first }}:5000/"
+docker_registry: "{{ hostvars[groups['registry'] | first]['ansible_host'] }}:5000/"
 docker_dns: ""
 
 env_hosts_dir: "{{ playbook_dir }}/environments/distributed"
@@ -20,9 +20,13 @@ registry:
   version: 2.3.1
   port: 5000
   gencert: false
+  datadir: /mnt/data/registry
   recycle:
     threshold: 80
     keeptags: 5
+
+couchdb:
+  datadir: /mnt/data/couchdb
 
 # openstack vars
 # TODO, should move these to a role and create a designated "defaults.yml" file

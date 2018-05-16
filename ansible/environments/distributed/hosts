@@ -3,11 +3,20 @@
 ; used for local actions only
 ansible ansible_connection=local
 
+worker0                ansible_host=35.168.12.208          ansible_ssh_user=ubuntu
+worker1                ansible_host=35.168.19.242          ansible_ssh_user=ubuntu
+worker2                ansible_host=34.228.208.174         ansible_ssh_user=ubuntu
+
+; worker0: db, registry
+; worker1: edge, controller, minio
+; worker2: etcd, kafka, minio
+
+
 [registry]
-10.3.2.153              ansible_host=10.3.2.153
+worker0
 
 [edge]
-10.3.2.154              ansible_host=10.3.2.154
+worker1
 
 [apigateway:children]
 edge
@@ -16,17 +25,29 @@ edge
 edge
 
 [controllers]
-10.3.2.155              ansible_host=10.3.2.155
+worker1
 
 [kafkas]
-10.3.2.156              ansible_host=10.3.2.156
+worker2
 
 [zookeepers:children]
 kafkas
 
+[task_registry]
+worker2
+
 [invokers]
-10.3.2.158              ansible_host=10.3.2.158
-10.3.2.159              ansible_host=10.3.2.159
+worker0
+worker1
+worker2
 
 [db]
-10.3.2.16               ansible_host=10.3.2.16
+worker0
+
+; For flannel
+[etcds]
+worker2
+
+[minios]
+worker2
+

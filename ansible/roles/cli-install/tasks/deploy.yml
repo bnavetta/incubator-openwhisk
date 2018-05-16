@@ -23,7 +23,7 @@
     mode: "0755"
     validate_certs: no
   vars:
-    host: "{{ groups['edge'] | first }}"
+    host: "{{ hostvars[groups['edge'] | first]['ansible_host'] }}"
     arch: "{{ ansible_machine | replace ('x86_64', 'amd64') }}"
     os: "{{ ansible_system | lower | replace('darwin', 'mac') }}"
     wsk: "{{ ( ansible_system == 'Windows') | ternary('wsk.exe', 'wsk') }}"

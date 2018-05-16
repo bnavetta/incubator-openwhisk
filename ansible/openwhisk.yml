@@ -22,13 +22,13 @@
 
 - import_playbook: controller.yml
 
+- import_playbook: flannel.yml
+
 - import_playbook: invoker.yml
 
 - import_playbook: edge.yml
 
 - import_playbook: routemgmt.yml
-
-- import_playbook: flannel.yml
 
 - import_playbook: minio.yml
 

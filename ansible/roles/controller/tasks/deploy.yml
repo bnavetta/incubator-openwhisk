@@ -116,7 +116,7 @@
     controller_args: >-
       {{ controller.arguments }}
       {{ jmx.jvmCommonArgs }}
-      -Djava.rmi.server.hostname={{ inventory_hostname }}
+      -Djava.rmi.server.hostname={{ ansible_host }}
       -Dcom.sun.management.jmxremote.rmi.port={{ jmx_remote_rmi_port }}
       -Dcom.sun.management.jmxremote.port={{ jmx_remote_port }}
 

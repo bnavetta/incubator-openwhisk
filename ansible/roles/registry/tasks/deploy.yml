@@ -53,6 +53,7 @@
       - "{{ registry.port }}:5000"
     volumes:
       - "{{ registry.confdir }}/certs:/certs"
+      - "{{ registry.datadir }}:/var/lib/registry"
   when: registry.gencert
 
 - name: (re)start registry with insecure ssl
@@ -64,6 +65,8 @@
     hostname: registry
     ports:
       - "{{ registry.port }}:5000"
+    volumes:
+      - "{{ registry.datadir }}:/var/lib/registry"
   when: not registry.gencert
 
 - name: wait until registry in this host is up and running

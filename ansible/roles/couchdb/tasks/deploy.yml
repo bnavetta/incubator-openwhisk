@@ -45,7 +45,9 @@
     state: started
     recreate: true
     restart_policy: "{{ docker.restart.policy }}"
-    volumes: "{{volume_dir | default([])}}"
+    # volumes: "{{volume_dir | default([])}}"
+    volumes:
+      - "{{ couchdb.datadir }}:/usr/local/var/lib/couchdb"
     ports:
       - "{{ db_port }}:5984"
       - "4369:4369"
