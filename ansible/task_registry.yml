@@ -1,0 +1,7 @@
+# This has to be run after the flannel playbook because it relies on the network
+# created by the invoker
+---
+
+- hosts: task_registry
+  roles:
+  - network-registry

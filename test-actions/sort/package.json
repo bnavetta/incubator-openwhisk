@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "chalk": "^2.4.1",
+    "dotenv": "^5.0.1",
+    "openwhisk": "^3.15.0",
+    "request": "^2.86.0"
+  }
+}

@@ -72,6 +72,7 @@ class DockerContainerFactory(instance: InstanceId,
     }
 
     for {
+      overlay <- overlayNetwork
       container <- DockerContainer.create(
         tid,
         image = image,
@@ -80,11 +81,11 @@ class DockerContainerFactory(instance: InstanceId,
         cpuShares = cpuShares,
         environment = Map("__OW_API_HOST" -> config.wskApiHost),
         network = containerArgsConfig.network,
+//        network = overlay.name,
         dnsServers = containerArgsConfig.dnsServers,
         name = Some(name),
         useRunc = dockerContainerFactoryConfig.useRunc,
         parameters ++ containerArgsConfig.extraArgs.map { case (k, v) => ("--" + k, v) })
-      overlay <- overlayNetwork
       _ <- container.connect(overlay.name)(tid)
     } yield container
   }

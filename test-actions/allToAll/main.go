@@ -1,78 +1,39 @@
 package main
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
+	"time"
 )
 
-type Registry struct {
-	address string
-}
-
-func NewRegistry(address string) Registry {
-	return Registry{address: address}
-}
-
-func (r *Registry) Register(name string) error {
-	fmt.Printf("Registering for service %v\n", name)
-
-	conn, err := net.Dial("tcp", r.address)
+func getOverlayIP() string {
+	// TODO: assuming eth1 might be too fragile, could do a subnet check
+	iface, err := net.InterfaceByName("eth1")
 	if err != nil {
-		return err
+		return err.Error()
 	}
-	defer conn.Close()
 
-	_, err = fmt.Fprintf(conn, "r %v", name)
-	return err
-}
-
-func (r *Registry) Lookup(name string) (string, error) {
-	conn, err := net.Dial("tcp", r.address)
+	addrs, err := iface.Addrs()
 	if err != nil {
-		return "", err
-	}
-	defer conn.Close()
-
-	_, err = fmt.Fprintf(conn, "g %v", name)
-	if err != nil {
-		return "", err
+		return err.Error()
 	}
 
-	response, err := ioutil.ReadAll(conn)
-	if err != nil {
-		return "", err
-	}
-
-	parts := bytes.Split(response, []byte(" "))
-	if len(parts) != 2 {
-		return "", errors.New("Malformed response")
-	}
-
-	addr := string(parts[0])
-	if addr == "Invalid" {
-		return "", errors.New("Undefined name")
-	}
-
-	fmt.Printf("Looked up %v for service %v\n", addr, name)
-
-	return addr, nil
-}
-
-func (r *Registry) LookupBlocking(name string) (string, error) {
-	for {
-		addr, err := r.Lookup(name)
-		if err == nil {
-			return addr, nil
-		} else if err.Error() != "Undefined name" {
-			return "", err
+	for _, addr := range addrs {
+		switch a := addr.(type) {
+		case *net.IPAddr:
+			return a.IP.String()
+		case *net.IPNet:
+			return a.IP.String()
+		default:
+			continue
 		}
 	}
+
+	return ""
 }
 
 type AllToAll struct {
@@ -93,16 +54,20 @@ func NewAllToAll(params Parameters) AllToAll {
 	}
 }
 
-func (a *AllToAll) Register(registry Registry) error {
-	return registry.Register(fmt.Sprintf("a2a-%v", a.id))
-}
+func (a *AllToAll) Listen(registry *Registry) error {
+	addr := getOverlayIP() + ":9898"
 
-func (a *AllToAll) Listen(addr string) error {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 	defer ln.Close()
+
+	err = registry.Register(fmt.Sprintf("a2a-%v", a.id), getOverlayIP())
+	if err != nil {
+		logError(err)
+		return err
+	}
 
 	for len(a.received) < a.instances-1 {
 		conn, err := ln.Accept()
@@ -112,6 +77,7 @@ func (a *AllToAll) Listen(addr string) error {
 
 		data, err := ioutil.ReadAll(conn)
 		if err != nil {
+			logError(err)
 			return err
 		}
 
@@ -120,6 +86,8 @@ func (a *AllToAll) Listen(addr string) error {
 		a.received = append(a.received, int(num))
 		conn.Close()
 	}
+
+	fmt.Printf("Received all values! %v\n", a.received)
 
 	a.listenerDone <- true
 
@@ -144,23 +112,37 @@ func (a *AllToAll) SendValue(addr string) error {
 }
 
 func (a *AllToAll) SendAll(registry Registry) error {
+	completions := make(chan error, a.instances)
+
 	for id := 0; id < a.instances; id++ {
 		if id == a.id {
 			continue
 		}
 
-		fmt.Printf("Will send to instance %v\n", id)
+		go func(id int) {
+			fmt.Printf("Will send to instance %v\n", id)
 
-		addr, err := registry.LookupBlocking(fmt.Sprintf("a2a-%v", id))
-		if err != nil {
-			return err
-		}
+			addr, err := registry.LookupBlocking(fmt.Sprintf("a2a-%v", id))
+			if err != nil {
+				completions <- err
+				return
+			}
 
-		err = a.SendValue(addr + ":9898")
-		if err != nil {
-			return err
+			fmt.Printf("Looked up %v for id %v\n", addr, id)
+
+			err = a.SendValue(addr + ":9898")
+			completions <- err
+		}(id)
+	}
+
+	for i := 0; i < a.instances-1; i++ {
+		res := <-completions
+		if res != nil {
+			return res
 		}
 	}
+
+	fmt.Println("Sent to all other lambdas!")
 
 	return nil
 }
@@ -182,6 +164,12 @@ type Parameters struct {
 }
 
 func main() {
+	go func() {
+		time.Sleep(55 * time.Second)
+		fmt.Println("{ \"status\": \"timed out\" }")
+		os.Exit(0)
+	}()
+
 	arg := os.Args[1]
 	var params Parameters
 	json.Unmarshal([]byte(arg), &params)
@@ -192,14 +180,8 @@ func main() {
 
 	a2a := NewAllToAll(params)
 
-	err := a2a.Register(registry)
-	if err != nil {
-		logError(err)
-		return
-	}
-
-	go a2a.Listen(":9898")
-	err = a2a.SendAll(registry)
+	go a2a.Listen(&registry)
+	err := a2a.SendAll(registry)
 	if err != nil {
 		logError(err)
 		return

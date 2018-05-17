@@ -23,7 +23,3 @@
 - hosts: invokers
   roles:
   - flannel
-
-- hosts: task_registry
-  roles:
-  - network-registry

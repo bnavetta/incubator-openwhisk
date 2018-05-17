@@ -51,10 +51,11 @@ object FlannelOverlayNetworkProvider extends OverlayNetworkProvider {
 
     val config = loadSubnet(Paths.get("/run/flannel/subnet.env"))
 
-    docker.createNetwork(name, config.subnet, Map(
-      "com.docker.network.bridge.enable_ip_masquerade" -> config.ipmasq.toString,
-      "com.docker.network.driver.mtu" -> config.mtu.toString,
-      "com.docker.network.bridge.name" -> "flannelbr0"
-    )).map(_ => new FlannelOverlayNetwork(name, config, docker))
+    docker.removeNetwork(name).recover { case _ => () }.flatMap { _ =>
+      docker.createNetwork(name, config.subnet, Map(
+        "com.docker.network.bridge.enable_ip_masquerade" -> config.ipmasq.toString,
+        "com.docker.network.driver.mtu" -> config.mtu.toString,
+        "com.docker.network.bridge.name" -> "flannelbr0"
+      )).map(_ => new FlannelOverlayNetwork(name, config, docker)) }
   }
 }

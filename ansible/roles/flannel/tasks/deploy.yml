@@ -25,11 +25,12 @@
   retries: "{{ docker.pull.retries }}"
   delay: "{{ docker.pull.delay }}"
 
-# TODO: we need to use the v2 api for data to be accessible to flannel
-- name: store flannel configuration in etcd
-  etcd3:
-    key: "{{ flannel.etcd.prefix }}/config"
-    value: "{{ flannel.config | to_json }}"
-    state: present
-    host: "{{ hostvars[groups['etcds'][0]]['ansible_host'] }}"
-    port: "{{ etcd.advertisedPort }}"
+
+# We have to use the v2 API, but Ansible only supports v3 at the moment. Data stored in one isn't accessible
+# to the other. 
+# - name: store flannel configuration in etcd
+#   uri:
+#     url: "http://{{ hostvars[groups['etcds'][0]]['ansible_host'] }}:{{ etcd.advertisedPort }}/v2/keys{{ flannel.etcd.prefix }}/config"
+#     method: PUT
+#     follow_redirects: all
+#     body: "{{ { 'value': flannel.config } | to_json }}"

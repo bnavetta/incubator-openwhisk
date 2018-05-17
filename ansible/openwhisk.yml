@@ -32,4 +32,6 @@
 
 - import_playbook: minio.yml
 
+- import_playbook: task_registry.yml
+
 - import_playbook: registry.yml

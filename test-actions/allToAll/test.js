@@ -4,7 +4,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 const openwhisk = require('openwhisk');
 
-const REGISTRY_ADDR = '10.0.44.2:7777';
+const REGISTRY_ADDR = '10.0.87.5:7777';
 
 dotenv.load({
     path: path.join(os.homedir(), '.wskprops')
@@ -58,9 +58,9 @@ function verify(results) {
 }
 
 function run() {
-    return spawnAll(4)
+    return spawnAll(5)
         .then(verify)
-        .then(valid => console.log("All sums match"))
+        .then(valid => console.log("All sums match? " + valid))
         .catch(e => console.error(e));
 }
 

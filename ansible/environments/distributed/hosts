@@ -3,17 +3,17 @@
 ; used for local actions only
 ansible ansible_connection=local
 
-worker0                ansible_host=35.168.12.208          ansible_ssh_user=ubuntu
-worker1                ansible_host=35.168.19.242          ansible_ssh_user=ubuntu
-worker2                ansible_host=34.228.208.174         ansible_ssh_user=ubuntu
+; worker0: db, kafka, task registry
+worker0                ansible_host=52.90.40.79          ansible_ssh_user=ubuntu
 
-; worker0: db, registry
-; worker1: edge, controller, minio
-; worker2: etcd, kafka, minio
+; worker1: edge, controller
+worker1                ansible_host=52.23.255.10          ansible_ssh_user=ubuntu
 
+; worker2: etcd, docker registry
+worker2                ansible_host=54.175.14.211         ansible_ssh_user=ubuntu
 
 [registry]
-worker0
+worker2
 
 [edge]
 worker1
@@ -28,13 +28,13 @@ edge
 worker1
 
 [kafkas]
-worker2
+worker0
 
 [zookeepers:children]
 kafkas
 
 [task_registry]
-worker2
+worker0
 
 [invokers]
 worker0
@@ -49,5 +49,5 @@ worker0
 worker2
 
 [minios]
-worker2
+
 

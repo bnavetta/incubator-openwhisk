@@ -12,7 +12,9 @@ RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o sort-server -v
 # This will start a multi-stage Docker build
 # The first container, with Go, will build the sort server
 # The next, which has nothing, only has our executable
-FROM scratch
+#FROM scratch
+
+FROM alpine
 
 COPY --from=0 /usr/src/sort-server /usr/local/bin/sort-server
 ENTRYPOINT [ "/usr/local/bin/sort-server" ]
